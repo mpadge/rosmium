@@ -1,0 +1,109 @@
+---
+title: "File formats"
+vignette: >
+  %\VignetteIndexEntry{File formats}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: '#>'
+---
+
+All `rosmium` functions operate on local files, and the format of each file is
+determined from its **suffix**. This vignette describes the suffixes
+recognised for OSM data (input and output of all main functions), and the
+separate set of formats written by the `osmium_export()` function.
+
+## Standard formats
+
+OSM file formats are specified by one or two suffixes, such as `.osm.pbf` or
+`.osc.gz`. Handling is delegated to `libosmium`, so every function accepting
+or writing OSM files recognises the same set.
+
+### Primary suffixes
+
+The last format suffix (before any compression suffix) specifies the actual
+file format:
+
+| Suffix | Format |
+| --- | --- |
+| `.pbf` | Binary Protocol Buffer Format. The most compact and fastest format, and the usual choice (`.osm.pbf`). |
+| `.xml` | OSM XML. |
+| `.opl` | Object Per Line: a text format with one OSM object per line, convenient for line-based tools such as `grep`. |
+| `.json` | OSM JSON. |
+| `.o5m` | The compact binary `o5m` format. |
+| `.o5c` | The `o5m` change-file variant, which may contain multiple versions of each object. |
+| `.debug` | Human-readable debug dump of the data. |
+| `.blackhole` | Output only: data are discarded. Useful for testing or timing. |
+| `.ids` | A list of object IDs. |
+
+### Secondary suffixes
+
+A secondary suffix placed in front of a primary one describes the *content* of
+the file, rather than its encoding:
+
+| Suffix | Meaning |
+| --- | --- |
+| `.osm` | Standard OSM data. On its own, `.osm` implies XML, so `x.osm` is equivalent to `x.osm.xml`. |
+| `.osh` | History file, containing multiple versions of each object. XML by default (`x.osh`), or combined with another format (`x.osh.pbf`). |
+| `.osc` | Change file, describing modifications to be applied to data. XML by default (`x.osc`), or combined with another format (`x.osc.opl`). |
+
+Typical complete file names are therefore `.osm.pbf` (OSM data in PBF),
+`.osm` (OSM XML), `.osh.pbf` (history in PBF), and `.osc` (XML change file).
+
+### Compression
+
+Files may additionally be compressed, by appending a compression suffix, such
+as `.osm.bz2` or `.opl.gz`. Both `.gz` and `.bz2` are supported.
+
+---
+
+## Export formats
+
+`osmium_export()` is different from other functions in that it converts OSM
+data to geometry-bearing *features*, rather than writing another OSM file. The
+formats written are therefore distinct from those above, and can generally not
+be used as input to any subsequent `rosmium` functions.
+
+| Format | Description |
+| --- | --- |
+| `geojson` | A single GeoJSON `FeatureCollection`. Can be read with packages like [`sf`](https://r-spatial.github.io/sf/). |
+| `geojsonseq` | Line-delimited GeoJSON sequence, with one feature per record. Better suited to very large outputs. |
+| `text` | Plain text output, with one feature per line, suitable for loading into spatial databases and GeoPackage workflows. |
+| `pg` | PostgreSQL `COPY` format, for bulk loading into PostGIS. |
+
+### Specifying the format
+
+The format may be given explicitly through the `output_format` parameter:
+
+```{r}
+#| label: export-format
+#| eval: false
+osmium_export (input, output = "roads.txt", output_format = "geojson")
+```
+
+Alternatively, if `output_format` is `NULL`, it is taken from the suffix of the
+`output` file. The names `json`, `jsonseq`, and `txt` are accepted as aliases
+for `geojson`, `geojsonseq`, and `text`, respectively. Format names are not
+case-sensitive.
+
+```{r}
+#| label: export-suffix
+#| eval: false
+osmium_export (input, output = "roads.geojson") # GeoJSON
+osmium_export (input, output = "roads.geojsonseq") # GeoJSON sequence
+osmium_export (input, output = "roads.txt") # text
+osmium_export (input, output = "roads.pg") # PostgreSQL COPY
+```
+
+If no `output` is given, results are returned as a character string and
+`output_format` must be specified.
+
+### Options
+
+Further options of `osmium_export()` control which features and attributes are
+written, irrespective of format: `geometry_types` (any of `"point"`,
+`"linestring"`, and `"polygon"`), `keep_untagged`, `attributes` (such as
+`"version,timestamp"`), `add_unique_id`, and a `config` file for tag
+inclusion and exclusion rules. See `?osmium_export` for details.
