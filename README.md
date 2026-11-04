@@ -13,10 +13,16 @@ WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.o
 <!-- badges: end -->
 
 R bindings for [`osmium-tool`](https://osmcode.org/osmium-tool/), a
-command-line tool for working with OpenStreetMap data built on the
+command-line tool for working with OpenStreetMap (OSM) data built on the
 [`libosmium`](https://osmcode.org/libosmium/) library. The package
 contains R functions for most of the `osmium-tool` functionality
 described in [the manual](https://osmcode.org/osmium-tool/manual.html).
+
+**NOTE** Unlike most R packages, this package operates exclusively on
+local files. The main functions generally return paths to files only,
+rather than actual values. All workflows start with a local OSM extract,
+with functions then enabling that to be filtered, cut, or otherwise
+transformed into new, modified versions also written to local storage.
 
 ## Installation
 
@@ -36,8 +42,8 @@ library(rosmium)
 
 ## Example
 
-Grab a small real-world extract to work with – the “ITS Leeds” test file
-used in the [`osmextract`
+Grab a small real-world `.pbf` (Protocol Buffer Format) extract to work
+with – the “ITS Leeds” test file used in the [`osmextract`
 package](https://docs.ropensci.org/osmextract/):
 
 ``` r
