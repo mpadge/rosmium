@@ -5,11 +5,11 @@ output: github_document
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
+knitr::opts_chunk$set (
+    collapse = TRUE,
+    comment = "#>",
+    fig.path = "man/figures/README-",
+    out.width = "100%"
 )
 ```
 
@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/mpadge/rosmium/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mpadge/rosmium/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/mpadge/rosmium/branch/main/graph/badge.svg)](https://codecov.io/gh/mpadge/rosmium)
+[![codecov](https://codecov.io/gh/mpadge/rosmium/branch/main/graph/badge.svg)](https://app.codecov.io/gh/mpadge/rosmium)
 [![Project Status: WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 <!-- badges: end -->
 
@@ -32,7 +32,7 @@ manual](https://osmcode.org/osmium-tool/manual.html).
 **NOTE** Unlike most R packages, this package operates exclusively on local
 files. The main functions generally return paths to files only, rather than
 actual values. All workflows start with a local OSM extract, with functions
-then enabling that to be filtered, cut, or otherwise transformed into new,
+then enabling that to be cut, filtered, merged, or otherwise transformed into new,
 modified versions also written to local storage.
 
 ## Installation
@@ -47,35 +47,43 @@ remotes::install_github("mpadge/rosmium")
 
 Then load for use:
 ```{r library}
-library(rosmium)
+library (rosmium)
 ```
 
 
 ## Example
 
-Grab a small real-world `.pbf` (Protocol Buffer Format) extract to work with --
-the "ITS Leeds" test file used in the [`osmextract`
-package](https://docs.ropensci.org/osmextract/):
+The following sections demonstrate most of the main functionality.
+
+### Local example data
+
+As said above, all functions start with a local OSM data file. Here, we grab a small
+real-world `.pbf` (Protocol Buffer Format) extract -- the "ITS Leeds" test file
+used in the [`osmextract` package](https://docs.ropensci.org/osmextract/):
 
 ```{r get-data, message = FALSE}
-its_example <- osmextract::oe_match("ITS Leeds", quiet = TRUE)
+its_example <- osmextract::oe_match ("ITS Leeds", quiet = TRUE)
 
-f <- osmextract::oe_download(
-  file_url = its_example$url,
-  file_size = its_example$file_size,
-  provider = "test",
-  download_directory = tempdir(),
-  quiet = TRUE
+f <- osmextract::oe_download (
+    file_url = its_example$url,
+    file_size = its_example$file_size,
+    provider = "test",
+    download_directory = tempdir (),
+    quiet = TRUE
 )
 ```
+
+### File information
 
 `osmium_fileinfo()` reports header and content summary information,
 mirroring `osmium fileinfo --extended`:
 
 ```{r fileinfo}
-info <- osmium_fileinfo(f, extended = TRUE)
+info <- osmium_fileinfo (input = f, extended = TRUE)
 info$data$count
 ```
+
+### Geographic extraction
 
 `osmium_extract()` trims a file down to a geographic boundary -- given
 as a bounding box here (`c(left, bottom, right, top)`), or alternatively
@@ -86,36 +94,66 @@ which is why the extract's own bounding box below ends up slightly
 larger than the box requested:
 
 ```{r extract}
-leeds_centre <- tempfile(fileext = ".osm.pbf")
-osmium_extract(f, leeds_centre, bbox = c(-1.57, 53.803, -1.56, 53.809))
+leeds_centre <- tempfile (fileext = ".osm.pbf")
+osmium_extract (
+    input = f,
+    output = leeds_centre,
+    bbox = c (-1.57, 53.803, -1.56, 53.809)
+)
 
-osmium_fileinfo(leeds_centre, extended = TRUE)$data$count
-osmium_fileinfo(leeds_centre, extended = TRUE)$data$bbox
+osmium_fileinfo (input = leeds_centre, extended = TRUE)$data$count
+osmium_fileinfo (input = leeds_centre, extended = TRUE)$data$bbox
 ```
+
+### Filtering by tags and values
 
 `osmium_tags_filter()` extracts objects matching a tag expression --
 here, every way tagged `highway=*`, plus the nodes and relations they
 reference:
 
 ```{r tags-filter}
-highways <- tempfile(fileext = ".osm.pbf")
-osmium_tags_filter(f, highways, expressions = "w/highway")
-
-osmium_fileinfo(highways, extended = TRUE)$data$count
+highways <- tempfile (fileext = ".osm.pbf")
+osmium_tags_filter (input = f, output = highways, expressions = "w/highway")
+osmium_fileinfo (input = highways, extended = TRUE)$data$count
 ```
 
-`osmium_export()` converts OSM data into geometry-bearing GeoJSON
-features, ready to read with a package like
-[`sf`](https://r-spatial.github.io/sf/). Here on the bbox-trimmed
-extract from above:
+Or filter by both a tag and corresponding values, here both "cycleway" and
+"footway":
 
-```{r extract-map, fig.alt = "Map of the geographic extract, showing points, lines and polygons around central ITS Leeds"}
-geojson <- osmium_export(leeds_centre, output_format = "geojson")
-roads <- sf::st_read(geojson, quiet = TRUE)
-plot(sf::st_geometry(roads))
+```{r tag-value-filter}
+cycleways <- tempfile (fileext = ".osm.pbf")
+osmium_tags_filter (
+    input = f,
+    output = cycleways,
+    expressions = "w/highway=cycleway,footway"
+)
+osmium_fileinfo (input = cycleways, extended = TRUE)$data$count
 ```
 
-## Available commands
+### Conversion to other formats
+
+The `output` argument to most functions can be a filename with any suffix
+described in the "File formats" vignette. A suffix of `.osm`, for example,
+generates output in `.osm` XML format:
+
+```{r osm-out, eval = TRUE}
+cycleways <- tempfile (fileext = ".osm")
+osmium_tags_filter (
+    input = f,
+    output = cycleways,
+    expressions = "w/highway=cycleway,footway"
+)
+head (readLines (cycleways))
+```
+
+This is the expected format for all functionality of [the `osmdata`
+pacakge](https://docs.ropensci.org/osmdata), and the output file name can be
+passed as the `doc` parameter to most functions there (like
+[`osmdata_sf()`](https://docs.ropensci.org/osmdata/reference/osmdata_sf.html)
+or
+[`osmdata_sc()`](https://docs.ropensci.org/osmdata/reference/osmdata_sc.html)).
+
+## All available commands
 
 Each `osmium-tool` command vendored into rosmium has a corresponding
 `osmium_*()` R function:
@@ -133,8 +171,3 @@ Each `osmium-tool` command vendored into rosmium has a corresponding
 
 See each function's documentation (e.g. `?osmium_extract`) for its full
 set of options.
-
-## License
-
-GPL-3, inherited from the GPL-3-licensed `osmium-tool`/`libosmium` C++
-sources rosmium wraps and vendors (see `LICENSE.txt`).
