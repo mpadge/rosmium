@@ -48,6 +48,13 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      # Quarto vignettes call library(rosmium) in a quarto.exe subprocess, which
+      # on Windows does not see the temporary library R CMD build installs into.
+      - name: Install package for vignette builds (Windows)
+        if: runner.os == 'Windows'
+        run: install.packages(".", repos = NULL, type = "source")
+        shell: Rscript {0}
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
