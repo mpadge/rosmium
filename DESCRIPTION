@@ -1,7 +1,7 @@
 Package: rosmium
 Type: Package
 Title: R Bindings for the 'osmium-tool' OpenStreetMap Command Line Tool
-Version: 0.1.0.004
+Version: 0.1.0.005
 Authors@R: c(
     person("Mark", "Padgham", email = "mark.padgham@email.com", role = c("aut", "cre")),
     person("Jochen", "Topf", email = "jochen@topf.org", role = c("aut", "cph"),
