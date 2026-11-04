@@ -1,11 +1,13 @@
 Package: rosmium
 Type: Package
 Title: R Bindings for the 'osmium-tool' OpenStreetMap Command Line Tool
-Version: 0.1.0.002
+Version: 0.1.0.003
 Authors@R: c(
     person("Mark", "Padgham", email = "mark.padgham@email.com", role = c("aut", "cre")),
     person("Jochen", "Topf", email = "jochen@topf.org", role = c("aut", "cph"),
-           comment = "Author of the vendored osmium-tool C++ sources"))
+           comment = "Author of the vendored osmium-tool C++ sources"),
+    person("Niels", "Lohmann", role = c("ctb", "cph"),
+           comment = "Author of the vendored nlohmann/json C++ library (src/vendor/nlohmann)"))
 Description: Provides R functions wrapping the command implementations of
     'osmium-tool' (<https://osmcode.org/osmium-tool/>), a command line tool
     for working with OpenStreetMap data built on the 'libosmium' library.
